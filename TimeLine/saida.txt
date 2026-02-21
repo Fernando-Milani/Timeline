@@ -1,0 +1,1905 @@
+Nome do arquivo: pages/index.html
+----------------------------------------
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Timeline Histórica</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="search-container">
+  <input 
+    type="text" 
+    id="searchInput" 
+    placeholder="Pesquisar"
+  />
+</div>
+
+<div class="timeline-container">
+  <div class="timeline-scale" id="timeline-scale"></div>
+  <div id="timeline" class="timeline-line"></div>
+</div>
+
+<div class="main-content">
+  <div id="results" class="results-container"></div>
+
+  <div id="content-panel" class="content-panel">
+    <div class="content-header">
+      <h2 id="content-title"></h2>
+      <button id="close-content">✕</button>
+    </div>
+    <div id="content-body" class="content-body">
+      <p>Selecione um evento para ver o conteúdo.</p>
+    </div>
+  </div>
+</div>
+
+
+
+<script src="script.js"></script>
+</body>
+</html>
+
+
+Nome do arquivo: pages/style.css
+----------------------------------------
+body {
+  font-family: Arial, sans-serif;
+  background: radial-gradient(circle at center, #202030 20%, #0A0A10 100%);
+  padding: 20px;
+}
+
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge moderno */
+}
+
+h1 {
+  text-align: center;
+}
+
+
+/* ============================= */
+/* Layout principal */
+/* ============================= */
+
+.main-content {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 7fr 3fr; /* cards e painel lado a lado */
+  grid-template-rows: auto;
+  
+}
+.content-body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
+/* ============================= */
+/* Imagens e vídeos dentro do conteúdo */
+/* ============================= */
+.content-body img,
+.content-body video,
+.content-body iframe {
+  width: 100%;      /* não ultrapassa a largura do painel */
+  height: auto;         /* mantém proporção */
+  display: block;
+  margin: 10px 0;       /* espaçamento vertical */
+  border-radius: 8px;
+}
+
+
+
+.timeline-container {
+  position: relative;
+  height: 150px;
+  margin: 20px 30px;
+  background: rgba(0,0,0,0);
+  padding-top: 20px;
+  border-radius: 6px;
+  overflow: hidden;
+  color:white;
+  cursor: grab;
+  user-select: none;
+}
+
+/* Linha principal */
+.timeline-line {
+  position: relative;
+  height: 2px;
+  background: #333;
+}
+
+/* Períodos */
+.period {
+  position: absolute;
+  top: 5px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  border-left: 2px solid rgba(255, 255, 255, 0.3);
+  border-right: 2px solid rgba(255, 255, 255, 0.3);
+  font-size: 12px;
+  padding: 2px 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
+
+  transition:
+    left 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.period:hover {
+  transform: translateY(-2px); /* sobe suavemente */
+  box-shadow: 0 8px 24px rgba(220, 220, 240, 0.35);
+}
+
+.period.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Eventos */
+.event {
+  position: absolute;
+  top: 1px;
+
+  text-align: center;
+  font-size: 13px;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(0); /* estado base */
+  transition:
+    left 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.event-dot {
+  width: 15px;
+  height: 30px;
+  background: linear-gradient(to bottom, #ff6b6b, #cc0000);
+  margin: 0 auto 6px;
+  position: relative;
+
+  /* formato de pino apontando pra cima */
+  clip-path: polygon(
+    50% 0%,     /* ponta superior */
+    85% 35%,
+    100% 75%,
+    100% 100%,
+    0% 100%,
+    0% 75%,
+    15% 35%
+  );
+
+  transform: translateY(0); /* estado base */
+  transition:
+    left 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+}
+
+.event-dot::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: rgba(255,255,255,0.8);
+  border-radius: 50%;
+  position: absolute;
+  top: 18px;
+  left: 3.5px;
+}
+.event-dot:hover {
+  transform: translateY(3px);
+}
+.event-title {
+  max-width: 120px;
+  transition: all 0.2s ease;
+}
+
+
+/* Barra de pesquisa */
+.search-container {
+  max-width: 1100px;
+  margin: 0px 30px;
+  text-align: center;
+}
+
+#searchInput {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: none;
+}
+.results-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+.results-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 15px;
+  margin: 0 30px;
+  width: 100%;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+
+
+/* Cards */
+.result-card {
+  position: relative;
+  height: 130px;
+  padding: 12px;
+  border-radius: 6px;
+  overflow: hidden; /* importante */
+  color: #787878;
+  display: flex;
+  flex-direction: column;
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+  0 2px 6px rgba(0,0,0,0.1),
+  inset 30px -20px 30px rgba(0,0,0,0.5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}.result-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4); /* ajuda na compatibilidade */
+  z-index: 0;
+}
+.result-card * {
+  position: relative;
+  z-index: 1;
+}.result-card:hover {
+  text-shadow: 2px 2px 2px rgba(0,0,0,0.3);
+  transform: translateY(-3px);
+  box-shadow: inset 0 0 0 rgba(0,0,0,0);
+  color: rgb(15, 15, 15);
+}
+.result-card:hover::before {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  background: rgba(0,0,0,0.2);
+}
+
+.result-title {
+  font-weight: bold;
+  margin-bottom: auto;
+}
+.result-type {
+  font-size: 11px;
+  margin-bottom: 30%;
+}
+
+
+
+/* Ítens da TL*/
+/* Quando aparece */
+.event.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+
+/* Régua*/
+.timeline-scale {
+  position: relative;
+  height: 15px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  padding: 0 40px; /* margem lateral */
+  box-sizing: border-box;
+  z-index: 2;
+}
+.scale-mark {
+  position: absolute;
+  transform: translateX(-50%);
+}
+.scale-mark:first-child {
+  transform: translateX(0%);
+}
+.scale-mark:last-child {
+  transform: translateX(-100%);
+}
+.scale-mark::after {
+  content: "";
+  display: block;
+  margin: 0px auto 0;
+  width: 1px;
+  height: 10px;
+  background: #999;
+}
+
+
+
+
+
+.content-block img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+.content-block h2 {
+  margin-top: 10px;
+}
+.content-block p {
+  line-height: 1.5;
+  margin: 8px 0;
+}
+
+
+
+
+.no-results {
+  grid-column: 1 / -1; /* ocupa todas as colunas do grid */
+  min-height: 200px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  text-align: center;
+  padding: 60px 20px;
+  color: #777;
+
+  opacity: 0;
+  animation: fadeIn 0.3s ease forwards;
+}
+.no-results h2 {
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.no-results p {
+  opacity: 0.8;
+}
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+
+
+
+/* ============================= */
+/* Painel de Conteúdo */
+/* ============================= */
+.content-panel.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#close-content {
+  border: none;
+  background: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* Painel de conteúdo */
+.content-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: rgba(20, 20, 30, 0.8);
+  border-radius: 8px;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,1);
+
+  /* Altura responsiva */
+  max-height: 600px;
+  height: 100%;
+  border-top: 1px solid rgba(150, 150, 180, 0.1);
+  border-left: 1px solid rgba(150, 150, 180, 0.1);
+
+
+  margin:0 30px;
+  color: white;
+
+  overflow-y: hidden; /* impede que saia do painel */
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.2s ease;
+}
+.content-panel:hover{
+  background: rgba(30, 30, 40, 0.8);
+  transform: translateY(-3px);
+}
+
+/* Cabeçalho fixo do painel */
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background: #00000000;
+  flex-shrink: 0; /* mantém o cabeçalho visível */
+  font-size: 15px;
+}
+
+/* Corpo do painel rolável */
+.content-body {
+  padding: 16px;
+  overflow-y: auto; /* rolagem interna se o conteúdo for grande */
+  font-size: 14px;
+  line-height: 1.5;
+  flex-grow: 1; /* ocupa todo o espaço restante do painel */
+}
+/* Ajusta os resultados */
+.results-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 15px;
+  margin: 0 30px;
+  width: 100%;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+
+Nome do arquivo: pages/script.js
+----------------------------------------
+// ===============================
+// Variáveis Globais
+// ===============================
+let GLOBAL_DATA = {
+  events: {},
+  periods: {}
+};
+
+let currentMin;
+let currentMax;
+let absoluteMin;
+let absoluteMax;
+
+const ZOOM_FACTOR = 0.1; // 10% por scroll
+const DRAG_PADDING_RATIO = 0.5; // permite arrastar até 50% do range visível além dos limites
+
+
+// ===============================
+// Carrega os dados JSON
+// ===============================
+async function loadData() {
+  const [eventsRes, periodsRes] = await Promise.all([
+    fetch("../data/timeline_events.json"),
+    fetch("../data/timeline_periods.json")
+  ]);
+
+  const eventsData = await eventsRes.json();
+  const periodsData = await periodsRes.json();
+
+  return {
+    events: eventsData.events,
+    periods: periodsData.periods
+  };
+}
+
+async function loadContentFile(filename) {
+  try {
+    const response = await fetch(`../data/content/${filename}`);
+    if (!response.ok) throw new Error("Arquivo não encontrado");
+
+    return await response.text();
+  } catch (error) {
+    console.error("Erro ao carregar conteúdo:", error);
+    return "<p>Conteúdo não disponível.</p>";
+  }
+}
+
+function formatYear(year) {
+  year = Math.floor(year);
+
+  const absYear = Math.abs(year);
+
+  let formatted;
+
+  if (absYear >= 1_000_000_000) {
+    formatted = (absYear / 1_000_000_000).toFixed(1).replace(/\.0$/, "") + " Bi";
+  } 
+  else if (absYear >= 1_000_000) {
+    formatted = (absYear / 1_000_000).toFixed(1).replace(/\.0$/, "") + " Mi";
+  } 
+  else {
+    formatted = absYear.toString();
+  }
+
+  if (year < 0) {
+    return formatted + " a.C.";
+  }
+
+  return formatted;
+}
+
+// ===============================
+// Converte data para ano numérico
+// ===============================
+function yearFromDate(dateStr) {
+  dateStr = dateStr.trim();
+
+  if (dateStr.startsWith("-")) {
+    const parts = dateStr.slice(1).split("-");
+    const year = parseInt(parts[0], 10);
+    return isNaN(year) ? 0 : -year;
+  } else {
+    const parts = dateStr.split("-");
+    const year = parseInt(parts[0], 10);
+    return isNaN(year) ? 0 : year;
+  }
+}
+
+// ===============================
+// Calcula limites absolutos
+// ===============================
+function calculateBounds(events, periods) {
+  const years = [];
+
+  Object.values(events).forEach(e => {
+    years.push(yearFromDate(e.date));
+  });
+
+  Object.values(periods).forEach(p => {
+    years.push(p.startYear, p.endYear);
+  });
+
+  const min = Math.min(...years);
+  const max = Math.max(...years);
+
+  return {
+    min,
+    max: min === max ? min + 1 : max
+  };
+}
+
+// ===============================
+// Converte ano para porcentagem
+// ===============================
+function yearToPercent(year, min, max) {
+  return ((year - min)/  (max - min)) * 100;
+}
+
+// ===============================
+// Régua
+// ===============================
+function renderScale() {
+  const scale = document.getElementById("timeline-scale");
+  if (!scale) return;
+
+  scale.innerHTML = "";
+
+  const range = currentMax - currentMin;
+
+  let divisions = 5;
+  if (range < 50) divisions = 4;
+  if (range < 10) divisions = 3;
+
+  const step = range / (divisions - 1);
+
+  for (let i = 0; i < divisions; i++) {
+    const year = currentMin + step * i;
+    const percent = (i / (divisions - 1)) * 100;
+
+    const mark = document.createElement("div");
+    mark.className = "scale-mark";
+
+    mark.style.left = percent + "%";
+    mark.textContent = formatYear(year);
+
+    scale.appendChild(mark);
+  }
+}
+
+// ===============================
+// LOD - Decide se evento e período aparecem
+// ===============================
+function shouldRenderEvent(event) {
+  const visibleRange = currentMax - currentMin;
+  const totalRange = absoluteMax - absoluteMin;
+
+  const zoomPercent = visibleRange / totalRange; 
+  const importance = event.importance || 5;
+
+  const zoomLevel = 1 - zoomPercent;
+  const threshold = Math.pow((10 - importance) / 10, 1.5);
+
+  return zoomLevel >= threshold;
+}
+
+function shouldRenderPeriod(period) {
+  const visibleRange = currentMax - currentMin;
+  const totalRange = absoluteMax - absoluteMin;
+
+  const zoomPercent = visibleRange / totalRange;
+  const zoomLevel = 1 - zoomPercent;
+
+  const importance = period.importance || 5;
+
+  // importância 10 = threshold 0
+  // importância 1 = threshold 0.9
+  const threshold = (10 - importance) / 10;
+
+  return zoomLevel >= threshold;
+}
+
+// ===============================
+// Render principal
+// ===============================
+async function renderTimeline() {
+  const { events, periods } = await loadData();
+
+  GLOBAL_DATA.events = events;
+  GLOBAL_DATA.periods = periods;
+
+  const bounds = calculateBounds(events, periods);
+
+  absoluteMin = bounds.min;
+  absoluteMax = bounds.max;
+
+  currentMin = absoluteMin;
+  currentMax = absoluteMax;
+
+  redrawTimeline();
+  renderResults();
+  setupZoom();
+  setupDrag();
+
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      renderResults(e.target.value);
+    });
+  }
+  renderScale();
+}
+
+// ===============================
+// Redesenha TL conforme zoom
+// ===============================
+function redrawTimeline() {
+  const timeline = document.getElementById("timeline");
+  const { events, periods } = GLOBAL_DATA;
+
+  /* =========================
+     PERÍODOS
+  ========================= */
+
+  const existingPeriods = new Map();
+  timeline.querySelectorAll(".period").forEach(el => {
+    existingPeriods.set(el.dataset.id, el);
+  });
+
+  Object.values(periods).forEach(period => {
+    const id = period.id;
+
+    const inRange =
+      period.endYear >= currentMin &&
+      period.startYear <= currentMax;
+
+    const shouldShow = inRange && shouldRenderPeriod(period);
+
+    let element = existingPeriods.get(id);
+
+    if (shouldShow) {
+      const left = yearToPercent(period.startYear, currentMin, currentMax);
+      const right = yearToPercent(period.endYear, currentMin, currentMax);
+      const width = right - left;
+
+      if (!element) {
+        element = document.createElement("div");
+        element.className = "period";
+        element.dataset.id = id;
+        element.textContent = period.title;
+
+        element.addEventListener("click", () => {
+          openContent(period.title, period.contentFile);
+        });
+
+        element.style.left = left + "%";
+        element.style.width = width + "%";
+
+        timeline.appendChild(element);
+
+        requestAnimationFrame(() => {
+          element.classList.add("visible");
+        });
+
+      } else {
+        element.style.left = left + "%";
+        element.style.width = width + "%";
+        element.classList.add("visible");
+        existingPeriods.delete(id);
+      }
+
+    } else if (element) {
+      element.classList.remove("visible");
+
+      element.addEventListener("transitionend", function handler() {
+        element.removeEventListener("transitionend", handler);
+        if (!element.classList.contains("visible")) {
+          element.remove();
+        }
+      });
+
+      existingPeriods.delete(id);
+    }
+  });
+
+  /* =========================
+     EVENTOS
+  ========================= */
+
+  const existingEvents = new Map();
+  timeline.querySelectorAll(".event").forEach(el => {
+    existingEvents.set(el.dataset.id, el);
+  });
+
+  Object.values(events).forEach(event => {
+    const year = yearFromDate(event.date);
+    const id = event.id;
+
+    const inRange = year >= currentMin && year <= currentMax;
+    const shouldShow = inRange && shouldRenderEvent(event);
+
+    let element = existingEvents.get(id);
+
+    if (shouldShow) {
+      const left = yearToPercent(year, currentMin, currentMax);
+
+      if (!element) {
+        element = document.createElement("div");
+        element.className = "event";
+        element.dataset.id = id;
+
+        element.innerHTML = `
+          <div class="event-dot"></div>
+          <div class="event-title">${event.title}</div>
+        `;
+
+        element.addEventListener("click", () => {
+          openContent(event.title, event.contentFile);
+        });
+
+        element.style.left = left + "%";
+
+        timeline.appendChild(element);
+
+        requestAnimationFrame(() => {
+          element.classList.add("visible");
+        });
+
+      } else {
+        element.style.left = left + "%";
+        element.classList.add("visible");
+        existingEvents.delete(id);
+      }
+
+    } else if (element) {
+      element.classList.remove("visible");
+
+      element.addEventListener("transitionend", function handler() {
+        element.removeEventListener("transitionend", handler);
+        if (!element.classList.contains("visible")) {
+          element.remove();
+        }
+      });
+
+      existingEvents.delete(id);
+    }
+  });
+}
+
+// ===============================
+// Zoom com scroll (mouse como centro)
+// ===============================
+function setupZoom() {
+  const container = document.querySelector(".timeline-container");
+
+  container.addEventListener("wheel", (e) => {
+    e.preventDefault();
+
+    const rect = container.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const percent = mouseX / rect.width;
+
+    const range = currentMax - currentMin;
+    const totalRange = absoluteMax - absoluteMin;
+    const zoomAmount = range * ZOOM_FACTOR;
+
+    let newMin = currentMin;
+    let newMax = currentMax;
+
+    if (e.deltaY < 0) {
+      // Zoom in
+      newMin += zoomAmount * percent;
+      newMax -= zoomAmount * (1 - percent);
+    } else {
+      // Zoom out
+      newMin -= zoomAmount * percent;
+      newMax += zoomAmount * (1 - percent);
+    }
+
+    const newRange = newMax - newMin;
+
+    // Limite mínimo de zoom
+    if (newRange < 5) return;
+
+    //  Limite máximo de zoom (range original)
+    if (newRange > totalRange) return;
+
+    currentMin = newMin;
+    currentMax = newMax;
+
+    redrawTimeline();
+    renderScale();
+  });
+}
+
+// ===============================
+// Deslizar TL com mouse
+// ===============================
+function setupDrag() {
+  const container = document.querySelector(".timeline-container");
+
+  let isDragging = false;
+  let startX = 0;
+  let startMin = 0;
+  let startMax = 0;
+
+  container.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    startX = e.clientX;
+    startMin = currentMin;
+    startMax = currentMax;
+    container.style.cursor = "grabbing";
+  });
+
+  window.addEventListener("mouseup", () => {
+    isDragging = false;
+    container.style.cursor = "grab";
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+
+    const rect = container.getBoundingClientRect();
+    const dx = e.clientX - startX;
+
+    const visibleRange = startMax - startMin;
+    const yearsPerPixel = visibleRange / rect.width;
+    const offsetYears = dx * yearsPerPixel;
+
+    let newMin = startMin - offsetYears;
+    let newMax = startMax - offsetYears;
+
+    // margem virtual proporcional ao zoom
+    const padding = visibleRange * DRAG_PADDING_RATIO;
+
+    const minLimit = absoluteMin - padding;
+    const maxLimit = absoluteMax + padding;
+
+    if (newMin < minLimit) {
+      newMin = minLimit;
+      newMax = newMin + visibleRange;
+    }
+
+    if (newMax > maxLimit) {
+      newMax = maxLimit;
+      newMin = newMax - visibleRange;
+    }
+
+    currentMin = newMin;
+    currentMax = newMax;
+
+    redrawTimeline();
+    renderScale();
+  });
+}
+
+// ===============================
+// Busca
+// ===============================
+function normalizeText(text) {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+// ===============================
+// Extrai conteúdo dos elementos da TL
+// ===============================
+async function openContent(title, contentFile) {
+  if (!contentFile) return;
+
+  const content = await loadContentFile(contentFile);
+
+  document.getElementById("content-title").textContent = title;
+  document.getElementById("content-body").innerHTML = content;
+
+  document.getElementById("content-panel").classList.add("open");
+}
+
+// ===============================
+// Renderiza Cards abaixo da TL
+// ===============================
+async function renderResults(filterText = "") {
+  const container = document.getElementById("results");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  let resultsCount = 0;
+
+  const search = normalizeText(filterText.trim());
+  const showAll = search === "";
+
+  // ---------------------------
+  // EVENTOS
+  // ---------------------------
+  for (const event of Object.values(GLOBAL_DATA.events)) {
+
+    const title = normalizeText(event.title);
+    const date = normalizeText(event.date);
+    const tags = (event.tags || []).map(t => normalizeText(t));
+    const categories = (event.categories || []).map(c => normalizeText(c));
+
+    const matches =
+      showAll ||
+      title.includes(search) ||
+      date.includes(search) ||
+      tags.some(tag => tag.includes(search)) ||
+      categories.some(cat => cat.includes(search));
+
+    if (!matches) continue;
+
+    resultsCount++; // CONTA RESULTADO
+
+    const div = document.createElement("div");
+    div.className = "result-card";
+
+    if (event.contentFile) {
+      const image = await extractImageFromContent(event.contentFile);
+      if (image) {
+        div.style.backgroundImage = `url(${image})`;
+        div.style.backgroundSize = "cover";
+        div.style.backgroundPosition = "center";
+        div.style.color = "white";
+      }
+    }
+
+    div.innerHTML = `
+      <div class="result-type">Evento</div>
+      <div class="result-title">${event.title}</div>
+      <div>${formatYear(yearFromDate(event.date))}</div>
+    `;
+
+    container.appendChild(div);
+
+    div.addEventListener("click", () => {
+      openContent(event.title, event.contentFile);
+    });
+  }
+
+  // ---------------------------
+  // PERÍODOS
+  // ---------------------------
+  for (const period of Object.values(GLOBAL_DATA.periods)) {
+
+    const title = normalizeText(period.title);
+
+    const matches =
+      showAll ||
+      title.includes(search) ||
+      String(period.startYear).includes(search) ||
+      String(period.endYear).includes(search);
+
+    if (!matches) continue;
+
+    resultsCount++; // CONTA RESULTADO
+
+    const div = document.createElement("div");
+    div.className = "result-card";
+
+    if (period.contentFile) {
+      const image = await extractImageFromContent(period.contentFile);
+      if (image) {
+        div.style.backgroundImage = `url(${image})`;
+        div.style.backgroundSize = "cover";
+        div.style.backgroundPosition = "center";
+        div.style.color = "white";
+      }
+    }
+
+    div.innerHTML = `
+      <div class="result-type">Período</div>
+      <div class="result-title">${period.title}</div>
+      <div>${formatYear(period.startYear)} – ${formatYear(period.endYear)}</div>
+    `;
+
+    container.appendChild(div);
+    div.addEventListener("click", () => {
+      openContent(period.title, period.contentFile);
+    });
+  }
+
+  // ============================
+  // SE NÃO HOUVER RESULTADOS
+  // ============================
+  if (resultsCount === 0 && !showAll) {
+    container.innerHTML = `
+      <div class="no-results">
+        <h2>Nenhum resultado encontrado</h2>
+        <p>Tente buscar por outro termo.</p>
+      </div>
+    `;
+  }
+}
+
+// ===============================
+// Preenche imagem no card
+// ===============================
+async function extractImageFromContent(contentRef) {
+  try {
+    const res = await fetch(`../data/content/${contentRef}`);
+    if (!res.ok) return null;
+
+    const text = await res.text();
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "text/html");
+
+    const img = doc.querySelector("img");
+    return img ? img.src : null;
+
+  } catch (err) {
+    console.warn("Erro ao carregar conteúdo:", err);
+    return null;
+  }
+}
+
+document.getElementById("close-content").addEventListener("click", () => {
+  const panel = document.getElementById("content-panel");
+  panel.classList.remove("open");
+
+  // Limpa conteúdo antigo
+  document.getElementById("content-title").textContent = "";
+  document.getElementById("content-body").innerHTML = "<p>Selecione um evento para ver o conteúdo.</p>";
+});
+
+
+
+// ===============================
+// Inicializa
+// ===============================
+renderTimeline();
+
+
+Nome do arquivo: tools/event_manager.py
+----------------------------------------
+import json
+import sys
+from pathlib import Path
+from datetime import datetime
+from InquirerPy import inquirer
+
+# ======================================================
+# Configuração
+# ======================================================
+
+DATA_FILE = Path(__file__).parent.parent / "data" / "timeline_events.json"
+CONTENT_EVENTS_DIR = Path(__file__).parent.parent / "data" / "content" /"events"
+
+# ======================================================
+# Utilitários
+# ======================================================
+
+def error(msg):
+    print(f"[ERRO] {msg}")
+    sys.exit(1)
+
+def info(msg):
+    print(f"[OK] {msg}")
+
+def load_events():
+    if not DATA_FILE.exists():
+        error(f"Arquivo não encontrado: {DATA_FILE}")
+
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_events(data):
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+def validate_date_ac(date_str):
+    parts = date_str.split("-")
+    if len(parts) != 4:
+        error("Data inválida. Use o formato YYYY-MM-DD ou -AAAA-MM-DD")
+    a, year, month, day = parts
+    if not (year.lstrip("-").isdigit() and month.isdigit() and day.isdigit()):
+        error("Data inválida. Ano, mês ou dia não são números")
+    if not (1 <= int(month) <= 12):
+        error("Mês inválido")
+    if not (1 <= int(day) <= 31):
+        error("Dia inválido")
+
+# ======================================================
+# Ações CRUD
+# ======================================================
+# Criar
+def create_event(events):
+    event_id = input("ID do evento: ").strip()
+    if not event_id:
+        error("ID é obrigatório")
+
+    if event_id in events:
+        error("Evento já existe")
+
+    title = input("Título: ").strip()
+    date = input("Data (YYYY-MM-DD): ").strip()
+    validate_date_ac(date)
+
+    importance = input("Importância (1–10): ").strip()
+    if not importance.isdigit() or not (1 <= int(importance) <= 10):
+        error("Importância inválida")
+
+    categories = input("Categorias (separadas por vírgula): ").strip()
+    tags = input("Tags (separadas por vírgula): ").strip()
+
+    # Garante que pasta existe
+    CONTENT_EVENTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Cria HTML base automaticamente
+    html_filename = f"{event_id}.html"
+    html_path = CONTENT_EVENTS_DIR / html_filename
+
+    html_template = f"""<article>
+  <h1>{title}</h1>
+
+  <p>
+    Conteúdo inicial do evento {title}.
+  </p>
+
+  <p>
+    Edite este arquivo para adicionar imagens e texto.
+  </p>
+</article>
+"""
+
+    with open(html_path, "w", encoding="utf-8") as f:
+        f.write(html_template)
+
+    # Salva JSON
+    events[event_id] = {
+        "id": event_id,
+        "title": title,
+        "date": date,
+        "importance": int(importance),
+        "categories": [c.strip() for c in categories.split(",") if c.strip()],
+        "tags": [t.strip() for t in tags.split(",") if t.strip()],
+        "contentFile": f"events/{html_filename}"
+    }
+
+    info(f"Evento '{event_id}' criado com sucesso")
+    info(f"Arquivo HTML criado em: {html_path}")
+
+# Listar
+def list_events(events):
+    if not events:
+        print("Nenhum evento cadastrado.")
+        return
+    print("\nEventos cadastrados:\n")
+    for eid, e in events.items():
+        print(f"- {eid} | {e['date']} | {e['title']}")
+    print()
+    main()
+
+# Visualizar
+def view_event(events):
+    if not events:
+        error("Nenhum evento para visualizar")
+
+    event_id = inquirer.select(
+        message="Selecione um evento",
+        choices=[
+            {"name": f"{eid} | {e['date']} | {e['title']}", "value": eid}
+            for eid, e in events.items()
+        ],
+    ).execute()
+    print("\nDetalhes do evento:\n")
+    print(json.dumps(events[event_id], indent=2, ensure_ascii=False))
+    print()
+    main()
+
+# Deletar
+def delete_events(events):
+    if not events:
+        error("Nenhum evento para deletar")
+
+    event_ids = inquirer.checkbox(
+        message="Selecione eventos para deletar",
+        choices=[
+            {"name": f"{eid} | {e['title']}", "value": eid}
+            for eid, e in events.items()
+        ],
+    ).execute()
+
+    if not event_ids:
+        info("Nenhum evento selecionado")
+        return
+
+    confirm = inquirer.confirm(
+        message=f"Tem certeza que deseja deletar {len(event_ids)} evento(s)?",
+        default=False,
+    ).execute()
+
+    if not confirm:
+        info("Operação cancelada")
+        return
+
+    # Carrega períodos para remover referências
+    from pathlib import Path
+    import json
+
+    PERIODS_FILE = Path(__file__).parent.parent / "data" / "timeline_periods.json"
+
+    if PERIODS_FILE.exists():
+        with open(PERIODS_FILE, "r", encoding="utf-8") as f:
+            periods_data = json.load(f)
+
+        periods = periods_data.get("periods", {})
+
+        for pid, period in periods.items():
+            if "children" in period:
+                period["children"] = [
+                    child for child in period["children"]
+                    if child not in event_ids
+                ]
+
+        with open(PERIODS_FILE, "w", encoding="utf-8") as f:
+            json.dump(periods_data, f, indent=2, ensure_ascii=False)
+
+    # Remove eventos
+    for eid in event_ids:
+        # Remove HTML correspondente
+        html_path = CONTENT_EVENTS_DIR / f"{eid}.html"
+        if html_path.exists():
+            html_path.unlink()
+            info(f"Arquivo HTML removido: {html_path}")
+
+        del events[eid]
+        info(f"Evento '{eid}' removido")
+
+    print()
+
+# Editar
+def edit_event(events):
+    if not events:
+        error("Nenhum evento para editar")
+
+    event_id = inquirer.select(
+        message="Selecione um evento para editar",
+        choices=[
+            {"name": f"{eid} | {e['date']} | {e['title']}", "value": eid}
+            for eid, e in events.items()
+        ],
+    ).execute()
+
+    event = events[event_id]
+
+    print("\nPressione ENTER para manter o valor atual.\n")
+
+    # ===== Editar título
+    new_title = input(f"Título [{event['title']}]: ").strip()
+    if new_title:
+        event["title"] = new_title
+
+    # ===== Editar data
+    new_date = input(f"Data [{event['date']}]: ").strip()
+    if new_date:
+        validate_date_ac(new_date)
+        event["date"] = new_date
+
+    # ===== Editar importance
+    new_importance = input(f"Importância [{event['importance']}]: ").strip()
+    if new_importance:
+        if not new_importance.isdigit() or not (1 <= int(new_importance) <= 10):
+            error("Importância inválida")
+        event["importance"] = int(new_importance)
+
+    # ===== Editar categorias
+    current_categories = ", ".join(event.get("categories", []))
+    new_categories = input(f"Categorias [{current_categories}]: ").strip()
+    if new_categories:
+        event["categories"] = [
+            c.strip() for c in new_categories.split(",") if c.strip()
+        ]
+
+    # ===== Editar tags
+    current_tags = ", ".join(event.get("tags", []))
+    new_tags = input(f"Tags [{current_tags}]: ").strip()
+    if new_tags:
+        event["tags"] = [
+            t.strip() for t in new_tags.split(",") if t.strip()
+        ]
+
+    # ===== Editar contentRef
+    current_content = event.get("contentRef", "")
+    new_content = input(f"ContentRef [{current_content}]: ").strip()
+    if new_content:
+        event["contentRef"] = new_content
+
+    info(f"Evento '{event_id}' atualizado com sucesso")
+    print()
+
+# ======================================================
+# Menu principal
+# ======================================================
+
+def main():
+    data = load_events()
+    events = data.get("events", {})
+
+    action = inquirer.select(
+        message="O que deseja fazer?",
+        choices=[
+            {"name": "Criar evento", "value": "create"},
+            {"name": "Listar eventos", "value": "list"},
+            {"name": "Visualizar evento", "value": "view"},
+            {"name": "Editar evento", "value": "edit"},
+            {"name": "Deletar eventos", "value": "delete"},
+            {"name": "Sair", "value": "exit"},
+        ],
+    ).execute()
+
+    if action == "create":
+        create_event(events)
+        save_events(data)
+
+    elif action == "list":
+        list_events(events)
+
+    elif action == "view":
+        view_event(events)
+
+    elif action == "edit":
+        edit_event(events)
+        save_events(data)
+
+
+    elif action == "delete":
+        delete_events(events)
+        save_events(data)
+
+    else:
+        sys.exit(0)
+
+# ======================================================
+# Entry point
+# ======================================================
+
+if __name__ == "__main__":
+    main()
+
+
+Nome do arquivo: tools/periods_manager.py
+----------------------------------------
+import json
+import sys
+from pathlib import Path
+from InquirerPy import inquirer
+
+# ======================================================
+# Configuração
+# ======================================================
+
+PERIODS_FILE = Path(__file__).parent.parent / "data" / "timeline_periods.json"
+EVENTS_FILE = Path(__file__).parent.parent / "data" / "timeline_events.json"
+CONTENT_DIR = Path(__file__).parent.parent / "data" / "content" / "periods"
+
+
+# ======================================================
+# Utilitários
+# ======================================================
+
+def error(msg):
+    print(f"[ERRO] {msg}")
+    sys.exit(1)
+
+def info(msg):
+    print(f"[OK] {msg}")
+
+def load_json(path):
+    if not path.exists():
+        error(f"Arquivo não encontrado: {path}")
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_json(path, data):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+# ======================================================
+# CRUD de Períodos
+# ======================================================
+
+# Criar
+def create_period(periods):
+    period_id = input("ID do período: ").strip()
+    if not period_id:
+        error("ID é obrigatório")
+
+    if period_id in periods:
+        error("Período já existe")
+
+    title = input("Título: ").strip()
+    start = input("Ano inicial: ").strip()
+    end = input("Ano final: ").strip()
+    importance = input("Importância (1–10): ").strip()
+
+    if not start.lstrip("-").isdigit() or not end.lstrip("-").isdigit():
+        error("Anos devem ser números")
+
+    if not importance.isdigit() or not (1 <= int(importance) <= 10):
+        error("Importância inválida")
+
+    categories = input("Categorias (separadas por vírgula): ").strip()
+    tags = input("Tags (separadas por vírgula): ").strip()
+
+    categories_list = [c.strip() for c in categories.split(",")] if categories else []
+    tags_list = [t.strip() for t in tags.split(",")] if tags else []
+
+    content_file = f"periods/{period_id}.html"
+
+    periods[period_id] = {
+        "id": period_id,
+        "title": title,
+        "startYear": int(start),
+        "endYear": int(end),
+        "children": [],
+        "importance": int(importance),
+        "categories": categories_list,
+        "tags": tags_list,
+        "contentFile": content_file
+    }
+
+    # 🔥 Criar HTML automaticamente
+    CONTENT_DIR.mkdir(parents=True, exist_ok=True)
+
+    html_path = CONTENT_DIR / f"{period_id}.html"
+
+    html_template = """<article>
+  <h1></h1>
+
+  <img src="" alt="">
+
+  <p>
+    
+  </p>
+</article>
+"""
+
+    with open(html_path, "w", encoding="utf-8") as f:
+        f.write(html_template)
+
+    info(f"Período '{period_id}' criado com sucesso")
+    info(f"Arquivo HTML criado em: {html_path}")
+    print()
+
+
+# Listar
+def list_periods(periods):
+    if not periods:
+        print("Nenhum período cadastrado.")
+        return
+
+    print("\nPeríodos cadastrados:\n")
+    for pid, p in periods.items():
+        print(f"- {pid} | {p['startYear']}–{p['endYear']} | {p['title']}")
+    print()
+    main()
+
+# Visualizar
+def view_period(periods):
+    if not periods:
+        error("Nenhum período para visualizar")
+
+    period_id = inquirer.select(
+        message="Selecione um período",
+        choices=[
+            {"name": f"{pid} | {p['startYear']}–{p['endYear']} | {p['title']}", "value": pid}
+            for pid, p in periods.items()
+        ],
+    ).execute()
+
+    print("\nDetalhes do período:\n")
+    print(json.dumps(periods[period_id], indent=2, ensure_ascii=False))
+    print()
+    main()
+
+
+# Editar
+def edit_period(periods):
+    if not periods:
+        error("Nenhum período para editar")
+
+    period_id = inquirer.select(
+        message="Selecione um período para editar",
+        choices=[
+            {"name": f"{pid} | {p['startYear']}–{p['endYear']} | {p['title']}", "value": pid}
+            for pid, p in periods.items()
+        ],
+    ).execute()
+
+    period = periods[period_id]
+
+    print("\nPressione ENTER para manter o valor atual.\n")
+
+    new_title = input(f"Título [{period['title']}]: ").strip()
+    if new_title:
+        period["title"] = new_title
+
+    new_start = input(f"Ano inicial [{period['startYear']}]: ").strip()
+    if new_start:
+        if not new_start.lstrip("-").isdigit():
+            error("Ano inicial inválido")
+        period["startYear"] = int(new_start)
+
+    new_end = input(f"Ano final [{period['endYear']}]: ").strip()
+    if new_end:
+        if not new_end.lstrip("-").isdigit():
+            error("Ano final inválido")
+        period["endYear"] = int(new_end)
+
+    new_importance = input(f"Importância [{period['importance']}]: ").strip()
+    if new_importance:
+        if not new_importance.isdigit() or not (1 <= int(new_importance) <= 10):
+            error("Importância inválida")
+        period["importance"] = int(new_importance)
+
+    new_categories = input(f"Categorias {period.get('categories', [])}: ").strip()
+    if new_categories:
+        period["categories"] = [c.strip() for c in new_categories.split(",")]
+
+    new_tags = input(f"Tags {period.get('tags', [])}: ").strip()
+    if new_tags:
+        period["tags"] = [t.strip() for t in new_tags.split(",")]
+
+    info(f"Período '{period_id}' atualizado com sucesso")
+    print()
+
+
+# Deletar
+def delete_period(periods):
+    if not periods:
+        error("Nenhum período para deletar")
+
+    period_ids = inquirer.checkbox(
+        message="Selecione períodos para deletar",
+        choices=[
+            {"name": f"{pid} | {p['title']}", "value": pid}
+            for pid, p in periods.items()
+        ],
+    ).execute()
+
+    if not period_ids:
+        info("Nenhum período selecionado")
+        return
+
+    confirm = inquirer.confirm(
+        message=f"Tem certeza que deseja deletar {len(period_ids)} período(s)?",
+        default=False,
+    ).execute()
+
+    if not confirm:
+        info("Operação cancelada")
+        return
+
+    for pid in period_ids:
+
+        # 🔥 Deletar HTML correspondente
+        html_path = CONTENT_DIR / f"{pid}.html"
+        if html_path.exists():
+            html_path.unlink()
+            info(f"Arquivo HTML removido: {html_path}")
+
+        # 🔥 Remover do JSON
+        del periods[pid]
+        info(f"Período '{pid}' removido")
+
+    print()
+
+# ======================================================
+# Link Event x Period
+# ======================================================
+
+def link_event_to_period(periods, events):
+    if not periods:
+        error("Nenhum período disponível")
+
+    if not events:
+        error("Nenhum evento disponível")
+
+    period_id = inquirer.select(
+        message="Selecione o período",
+        choices=[
+            {"name": f"{pid} | {p['title']}", "value": pid}
+            for pid, p in periods.items()
+        ],
+    ).execute()
+
+    period = periods[period_id]
+
+    available_events = [
+        eid for eid in events if eid not in period["children"]
+    ]
+
+    if not available_events:
+        info("Nenhum evento disponível para vincular")
+        return
+
+    event_ids = inquirer.checkbox(
+        message="Selecione eventos para vincular",
+        choices=[
+            {"name": f"{eid} | {events[eid]['title']}", "value": eid}
+            for eid in available_events
+        ],
+    ).execute()
+
+    for eid in event_ids:
+        period["children"].append(eid)
+        info(f"Evento '{eid}' vinculado ao período '{period_id}'")
+
+    print()
+
+
+# ======================================================
+# Menu principal
+# ======================================================
+
+def main():
+    periods_data = load_json(PERIODS_FILE)
+    events_data = load_json(EVENTS_FILE)
+
+    periods = periods_data.get("periods", {})
+    events = events_data.get("events", {})
+
+    action = inquirer.select(
+        message="O que deseja fazer?",
+        choices=[
+            {"name": "Criar período", "value": "create"},
+            {"name": "Listar períodos", "value": "list"},
+            {"name": "Visualizar período", "value": "view"},
+            {"name": "Editar período", "value": "edit"},
+            {"name": "Vincular eventos a período", "value": "link"},
+            {"name": "Deletar períodos", "value": "delete"},
+            {"name": "Sair", "value": "exit"},
+        ],
+    ).execute()
+
+    if action == "create":
+        create_period(periods)
+        save_json(PERIODS_FILE, periods_data)
+
+    elif action == "list":
+        list_periods(periods)
+
+    elif action == "view":
+        view_period(periods)
+
+    elif action == "edit":
+        edit_period(periods)
+        save_json(PERIODS_FILE, periods_data)
+
+    elif action == "link":
+        link_event_to_period(periods, events)
+        save_json(PERIODS_FILE, periods_data)
+
+    elif action == "delete":
+        delete_period(periods)
+        save_json(PERIODS_FILE, periods_data)
+
+    else:
+        sys.exit(0)
+
+
+# ======================================================
+# Entry point
+# ======================================================
+
+if __name__ == "__main__":
+    main()
+
+
+Nome do arquivo: tools/validate_data.py
+----------------------------------------
+import json
+import sys
+from datetime import datetime
+import os
+#-------------------------------------------------------------------
+# Configurações
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+EVENTS_FILE = os.path.abspath(os.path.join(BASE_DIR, "..", "data", "timeline_events.json"))
+PERIODS_FILE = os.path.abspath(os.path.join(BASE_DIR, "..", "data", "timeline_periods.json"))
+MIN_YEAR = -100000
+MAX_YEAR = datetime.now().year + 5
+
+# =========================
+# Utilidades
+# =========================
+def load_json(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"[ERRO] Falha ao carregar {path}: {e}")
+        sys.exit(1)
+
+def error(msg):
+    print(f"[ERRO] {msg}")
+    sys.exit(1)
+
+def warning(msg):
+    print(f"[AVISO] {msg}")
+
+
+
+
+# =========================
+# Validação de Eventos
+# =========================
+
+def validate_events(events_data):
+    if "events" not in events_data:
+        error("Arquivo de eventos não contém a chave 'events'")
+
+    events = events_data["events"]
+    event_ids = set()
+
+    for event_id, event in events.items():
+        # ID consistente
+        if event_id != event.get("id"):
+            error(f"ID inconsistente no evento {event_id}")
+
+        if event_id in event_ids:
+            error(f"Evento duplicado: {event_id}")
+        event_ids.add(event_id)
+
+        # Data válida (ISO 8601)
+        date_str = event.get("date")
+        if not isinstance(date_str, str):
+            error(f"Evento {event_id} deve possuir 'date' como string ISO")
+
+        try:
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            error(
+                f"Evento {event_id} possui 'date' inválida. Use YYYY-MM-DD"
+            )
+
+        year = date_obj.year
+        if year < MIN_YEAR or year > MAX_YEAR:
+            warning(
+                f"Evento {event_id} possui data fora do intervalo esperado"
+            )
+
+        # Importance
+        importance = event.get("importance")
+        if not isinstance(importance, int) or not (1 <= importance <= 10):
+            error(f"Evento {event_id} possui 'importance' inválida (1–10)")
+
+        # Categories e tags
+        if "categories" in event and not isinstance(event["categories"], list):
+            error(f"Evento {event_id} possui 'categories' inválido")
+
+        if "tags" in event and not isinstance(event["tags"], list):
+            error(f"Evento {event_id} possui 'tags' inválido")
+
+    return event_ids
+
+
+
+# =========================
+# Validação de Períodos
+# =========================
+
+def validate_periods(periods_data, valid_event_ids):
+    if "periods" not in periods_data:
+        error("Arquivo de períodos não contém a chave 'periods'")
+
+    periods = periods_data["periods"]
+
+    if "root" not in periods_data:
+        error("Arquivo de períodos não define 'root'")
+
+    if periods_data["root"] not in periods:
+        error("Período raiz não existe no dicionário")
+
+    period_ids = set()
+
+    for period_id, period in periods.items():
+        # ID consistente
+        if period_id != period.get("id"):
+            error(f"ID inconsistente no período {period_id}")
+
+        if period_id in period_ids:
+            error(f"Período duplicado: {period_id}")
+        period_ids.add(period_id)
+
+        start = period.get("startYear")
+        end = period.get("endYear")
+
+        if not isinstance(start, int) or not isinstance(end, int):
+            error(f"Período {period_id} possui datas inválidas")
+
+        if start >= end:
+            error(f"Período {period_id} possui startYear >= endYear")
+
+        children = period.get("children", [])
+        if not isinstance(children, list):
+            error(f"Período {period_id} possui 'children' inválido")
+
+        for child_id in children:
+            # Child pode ser evento ou período
+            if child_id in valid_event_ids:
+                event = events_data["events"].get(child_id)
+
+                date_str = event.get("date")
+                if not isinstance(date_str, str):
+                    error(f"Evento {child_id} não possui 'date' válida")
+                    continue
+
+                try:
+                    event_year = datetime.fromisoformat(date_str).year
+                except ValueError:
+                    error(
+                        f"Evento {child_id} possui 'date' em formato inválido: {date_str}"
+                    )
+                    continue
+
+                if not (start <= event_year <= end):
+                    warning(
+                        f"Evento {child_id} ({event_year}) fora do intervalo "
+                        f"do período {period_id} ({start}–{end})"
+                    )
+
+            elif child_id in periods:
+                child_period = periods[child_id]
+
+                if not (
+                    start <= child_period["startYear"]
+                    and child_period["endYear"] <= end
+                ):
+                    warning(
+                        f"Sub-período {child_id} extrapola intervalo de {period_id}"
+                    )
+
+            else:
+                error(f"Child inexistente '{child_id}' em período {period_id}")
+
+    return period_ids
+
+#-------------------------------------------------------------------
+# Execução principal
+if __name__ == "__main__":
+    print("Validando dados da timeline...\n")
+
+    events_data = load_json(EVENTS_FILE)
+    periods_data = load_json(PERIODS_FILE)
+
+    valid_event_ids = validate_events(events_data)
+    validate_periods(periods_data, valid_event_ids)
+
+    print("\nValidação concluída com sucesso.")
+
+
