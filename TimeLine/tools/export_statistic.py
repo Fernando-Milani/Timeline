@@ -1,1 +1,0 @@
-# Analise estatísticas dos dados json existentes
